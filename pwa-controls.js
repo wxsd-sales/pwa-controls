@@ -15,16 +15,10 @@ const LOCATION = 'InsideRoom';
 const PWA_URLS = [
   {
     "Text" : 'Workspace iFrame',
-    "URL" : 'https://socketeer.glitch.me/pwa',
+    "URL" : 'https://www.example.com',
     "Parameters" : true,
-    "iFrame" : 'https://workspaces.dnaspaces.io/?token=fdf320ef-1aae-4479-b638-3dd823f9e4bb#/dashboard',
+    "iFrame" : 'https://iframe.example.com',
     "Default" : true
-  },
-  {
-    "Text" : 'Yahoo iFrame',
-    "URL" : 'https://socketeer.glitch.me/pwa',
-    "iFrame" : 'https://www.yahoo.com',
-    "Parameters" : true,
   },
   {
     "Text" : 'Google',
