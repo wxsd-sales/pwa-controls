@@ -8,8 +8,9 @@ This is a simple macro which gives you the ablity to easily toggle between Persi
 ## Requirements
 
 1. RoomOS 10.12.x or above Webex Device.
-2. Web admin access to the device to uplaod the macro.
-3. Admin access token if you wish to use Cloud xAPI
+2. Webex Room Navigator paired with the Webex Device
+3. Web admin access to the device to uplaod the macro.
+4. Admin access token if you wish to use Cloud xAPI to switch the Navigator back to controller mode.
 
 
 ## Setup
