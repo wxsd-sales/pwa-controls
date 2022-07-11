@@ -1,4 +1,42 @@
+/********************************************************
+Copyright (c) 2022 Cisco and/or its affiliates.
+This software is licensed to you under the terms of the Cisco Sample
+Code License, Version 1.1 (the "License"). You may obtain a copy of the
+License at
+               https://developer.cisco.com/docs/licenses
+All use of the material herein must be in accordance with the terms of
+the License. All rights not expressly granted by the License are
+reserved. Unless required by applicable law or agreed to separately in
+writing, software distributed under the License is distributed on an "AS
+IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+or implied.
+*********************************************************
+ * 
+ * Macro Author:      	William Mills
+ *                    	Technical Solutions Specialist 
+ *                    	wimills@cisco.com
+ *                    	Cisco Systems
+ * 
+ * Version: 1-0-0
+ * Released: 07/27/22
+ * 
+ * This Webex Device Persistent Web App Control Macro allows you to toggle
+ * between Controller and PWA mode on your paired Webex Room Navigators and 
+ * change between different PWA URLs and from a UI Panel on either your main
+ * Touch enabled interface or another Navigator/Touch 10 in controller mode.
+ * When no other controller is available to access the UI  and toggle from 
+ * PWA to Controller mode. The Macro listens for the keyword "ExitPWA" which
+ * can be sent to it via Cloud xAPI from the Web App which is open on the
+ * Navigator.
+ * eg. https://www.example.com/?device=12345&token12345
+ * 
+ ********************************************************/
+
 import xapi from 'xapi';
+
+/*********************************************************
+ * Configure the settings below
+**********************************************************/
 
 // Customise the Button name
 const BUTTON_NAME = 'PWA Controls';
@@ -7,128 +45,102 @@ const BUTTON_NAME = 'PWA Controls';
 const LOCATION = 'InsideRoom';
 
 
-// Create your URLs in which you would like to display
-// Miniumn you need a unique Text and URL field
-// Prameters set to true will cause the LED Sequence to be sent
-// Including an iFrame will send the iFrame URL to the main URL as a 'url' parameter
-// Default set to true will make the macro automatically assign that URL each time its initialized
 const PWA_URLS = [
   {
-    "Text" : 'Workspace iFrame',
-    "URL" : 'https://www.example.com',
-    "Parameters" : true,
-    "iFrame" : 'https://iframe.example.com',
-    "Default" : true
+    "Text" : 'Example',
+    "URL" : 'https://example.com/'
+  },
+  {
+    "Text" : 'Presence on device',
+    "URL" : 'https://wxsd-sales.github.io/presence-on-device/'
   },
   {
     "Text" : 'Google',
-    "URL" : 'www.google.com',
-    "Parameters" : false,
-  },
-  {
-    "Text" : 'Test',
-    "URL" : 'www.google.com',
-    "Parameters" : false,
+    "URL" : 'https://www.google.com'
   }
 ];
 
-
-//// Do not touch ///
-
-
-const COLORS = ['Green', 'Yellow', 'Red', 'Off'];
-const LED_SEQUENCE = [0,1,3,2,3,2,1,0];
-const LED_STRING = +LED_SEQUENCE.join("");
-let BUFFER = new Array(LED_SEQUENCE.length).fill(0);
+/*********************************************************
+ * Do not change below
+**********************************************************/
 
 
-// Generates the PWA URL based off the site settings
-function createURL(site){
+// Our main function which initializes everything
+async function main(){
 
-  console.log('Creating URL')
+  // Create our UI
+  createPanel();
 
-  let link = '';
+  // Sync the UI states
+  await syncUI();
 
-  if (site.Parameters && site.iFrame) {
-    link = `${site.URL}?led=${LED_STRING}&url=${site.iFrame}`;
-  } else if (site.Parameters){
-    link = `${site.URL}?led=${LED_STRING}`;
-  } else {
-    link = site.URL;
-  }
-
-  return link;
+   // Listen for Widget and PWA URL Change events
+  xapi.Event.UserInterface.Extensions.Widget.Action.on(widgetEvent);
+  xapi.Config.UserInterface.HomeScreen.Peripherals.WebApp.URL.on(syncUI);
+  xapi.Event.Message.Send.on(monitorMessage);
+  xapi.Status.Peripherals.ConnectedDevice.on(peripheralsChange);
 
 }
+
+// Run our main function and begin monitoring events
+main();
+
+
+/*********************************************************
+ * Functions for Macros operation
+**********************************************************/
+
 
 // Sets the PWA URL
 function setPWAURL(url) {
-
   console.log('PWA URL set to: ' +url);
-
   xapi.Config.UserInterface.HomeScreen.Peripherals.WebApp.URL.set(url);
-
 }
 
+// This function is called when a xAPI Send Message is called
+// it will exit kiosk mode when it heards the keyword ExistKiosk
+function monitorMessage(event) {
 
-// Used initially to identify the default URL and sets it
-function setDefaultURL() {
-
-  PWA_URLS.forEach(site => {
-    if(site.Default){
-      setPWAURL(createURL(site));
-      console.log(`Default site: ${site.URL}`);
-      return;
-    }
-  })
-
-}
-
-// Converts a 
-
-ator to controller mode
-// If no navigator is given, it will convert all connected Navigators to controller mode
-async function disablePWA(navigator) {
-
-  if (navigator == null){
-    console.log('Disabling for all Navigators');
-    alertUser('Disabling PWA on all Webex Navigators, this will take 20 seconds');
-    const navigators = await listNavigators();
-
-    navigators.forEach(device => {
-
-      xapi.Command.Peripherals.TouchPanel.Configure(
-      {
-        ID: device.ID, 
-        Location: LOCATION, 
-        Mode: 'Controller'
-      });
-
-    });
-  } else {
-    console.log('Disabling PWA for: ' + navigator);
-    alertUser('Disabling PWA, this will take 20 seconds');
-    xapi.Command.Peripherals.TouchPanel.Configure(
-      {
-        ID: navigator, 
-        Location: LOCATION, 
-        Mode: 'Controller'
-      });
+  if(event.Text == 'ExitPWA'){
+    console.log('Switching all PWA Navigators back to controller mode');
+    disablePWA();
   }
-  
+
 }
 
+// This function is called when a xAPI Send Message is called
+// it will exit kiosk mode when it heards the keyword ExistKiosk
+function peripheralsChange(event) {
+
+  console.log('Peripherals changed, updating UI')
+
+  createPanel();
+
+  syncUI();
+
+}
+
+// Converts a Navigator to controller mode
+// If no navigator is given, it will convert all connected Navigators to controller mode
+async function disablePWA() {
+
+  const navigators = await listNavigators();
+
+  navigators.forEach(device => {
+
+    if(device.Type == "PersistentWebApp") {
+      setDeviceMode(device.ID, false);
+    }
+
+  });
+
+}
 
 // Enables or disables a specific navigator for PWA or Controller
 function setDeviceMode(navigator, on) {
 
   const mode = on ? 'PersistentWebApp' : 'Controller';
-
-  console.log(`Setting ${navigator} to ${mode} mode`)
-
   const message = `Setting ${navigator} to ${mode} mode`;
-  console.log(message);
-
   alertUser(`${message}, this will take 20 seconds`);
 
   xapi.Command.Peripherals.TouchPanel.Configure(
@@ -141,36 +153,8 @@ function setDeviceMode(navigator, on) {
 
 }
 
-// This function compares the LED blink sequence
-function compare(){
 
-  console.log(`LED: ${JSON.stringify(LED_SEQUENCE)} | Buffer: ${JSON.stringify(BUFFER)}`)
-  if(JSON.stringify(LED_SEQUENCE)==JSON.stringify(BUFFER)){
-    console.log("Match");
-    disablePWA();
-    BUFFER.fill(0);
-  } else {
-    
-  }
 
-}
-
-// Adds a LED color event to the buffer
-function addToBuffer(value) {
-  BUFFER.shift();
-  BUFFER.push(value);
-  compare();
-}
-
-// Converts a int to a color
-function convertColor(color){
-  return COLORS.indexOf(color);
-}
-
-// Handles the LED color event
-function ledMonitor(color) {  
-  addToBuffer(convertColor(color));
-}
 
 // Alerts user of a PWA/Controller change
 function alertUser(message) {
@@ -190,26 +174,17 @@ async function syncUI() {
 
   const currentURL = await xapi.Config.UserInterface.HomeScreen.Peripherals.WebApp.URL.get();
 
-  console.log('Current URL: ' +currentURL)
-
   const navigators = await listNavigators();
 
   // Update the Site select panel
   PWA_URLS.forEach( (site, i) => {
 
-    console.log('Site URL: ' +site.URL);
-
     if(currentURL.indexOf('url=') == -1) {
-      console.log('No url parameter')
-      console.log(`Setting ${site.Text} to ${(currentURL.indexOf(site.URL) != -1) ? 'on' : 'off'}`)
       xapi.Command.UserInterface.Extensions.Widget.SetValue({
         WidgetId: 'pwa_site_'+i,
         Value: (currentURL.indexOf(site.URL) != -1) ? 'on' : 'off',
       });
     } else {
-      console.log('Has URL Parameter')
-      console.log(`iFrame: ${site.iFrame}`)
-      console.log(`Setting ${site.Text} to ${(currentURL.indexOf('url='+site.iFrame) != -1) ? 'on' : 'off'}`)
       xapi.Command.UserInterface.Extensions.Widget.SetValue({
         WidgetId: 'pwa_site_'+i,
         Value: (currentURL.indexOf('url='+site.iFrame) != -1) ? 'on' : 'off',
@@ -220,12 +195,10 @@ async function syncUI() {
 
   // Update the navigator select list panel
   navigators.forEach( navigator => {
-
     xapi.Command.UserInterface.Extensions.Widget.SetValue({
       WidgetId: navigator.ID,
       Value: (navigator.Type == 'PersistentWebApp') ? 'on' : 'off',
     });
-
   })
 
 }
@@ -236,45 +209,22 @@ async function widgetEvent(event){
   const navigators = await listNavigators();
 
   navigators.forEach(navigator => {
-
     if(navigator.ID == event.WidgetId){
       setDeviceMode(navigator.ID, event.Value === 'on');
       return;
     }
-
   })
 
-  PWA_URLS.forEach((site, i)=> {
-
+  for ( let i=0; i < PWA_URLS.length; i++ ) {
     if('pwa_site_'+i == event.WidgetId) {
-      setPWAURL(createURL(site))
+      setPWAURL(PWA_URLS[i].URL)
       return;
     }
-
-  })
-
-}
-
-// Our main function which initializes everything
-async function main(){
-
-  setDefaultURL();
-
-  createPanel();
-
-  await syncUI();
-
-
-   // Listen for all toggle events
-  xapi.Event.UserInterface.Extensions.Widget.Action.on(widgetEvent);
-
-  // Monitor the LED change events
-  xapi.Status.UserInterface.LedControl.Color.on(ledMonitor);
-
-  // Monitor URL changes
-  xapi.Config.UserInterface.HomeScreen.Peripherals.WebApp.URL.on(syncUI);
+  }
 
 }
+
+
 
 
 // This function will return a list of all Navigators attached to the system
@@ -293,6 +243,12 @@ async function listNavigators() {
 
   return result;
 }
+
+
+/*********************************************************
+ * UI Panel Section
+**********************************************************/
+
 
 // Here we create the Button and Panel for the UI
 async function createPanel() {
@@ -379,5 +335,3 @@ async function createPanel() {
   
 }
 
-// Run our main function and begin monitoring events
-main();
