@@ -13,7 +13,7 @@ You can also use Cloud xAPI commands to exit PWA mode from your Kiosk web app. T
 
 ## Requirements
 
-1. RoomOS 10.12.x or above Webex Device with a Webex Room Navigator Paired
+1. RoomOS 10.12.x or above Webex Device with a Webex Room Navigator Paired ( over a LAN connection and powered via POE, not connected directly to the main Webex Device )
 2. Web admin access to the device to uplaod the macro.
 3. Bot or admin access token if you wish to use Cloud xAPI to switch the Navigator back to controller mode from a displayed Web App.
 4. A seperate Controller if your Webex Device doesn't have a touch interface.
@@ -24,6 +24,10 @@ You can also use Cloud xAPI commands to exit PWA mode from your Kiosk web app. T
 1. Download the ``pwa-controls.js`` file and upload it to your Webex Room devices Macro editor via the web interface.
 2. Configure the Macro by changing the initial values, there are comments explaining each one.
 3. Enable the Macro on the editor.
+
+
+## Validation
+This Macro was developed and tested on a Webex Codec Pro with Webex Room Navigator and a Touch 10 to verify the exist PWA mode feature. Other combinations of devices e.g. Desk/Board devices paired with a Navigator should also work but haven't been tested at this time.
 
 ## Support
 
