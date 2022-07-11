@@ -15,8 +15,8 @@ You can also use Cloud xAPI commands to exit PWA mode from your Kiosk web app. T
 
 1. RoomOS 10.12.x or above Webex Device with a Webex Room Navigator Paired ( over a LAN connection and powered via POE, not connected directly to the main Webex Device )
 2. Web admin access to the device to uplaod the macro.
-3. Bot or admin access token if you wish to use Cloud xAPI to switch the Navigator back to controller mode from a displayed Web App.
-4. A seperate Controller if your Webex Device doesn't have a touch interface.
+3. Bot or admin access token if you wish to use Cloud xAPI to switch the Navigator back to Controller mode from a displayed Web App.
+4. A seperate Controller (either Touch 10 or Navigator in Controller) if your Webex Device doesn't have a touch interface so that you can toggle between PWA and Controller modes.
 
 
 ## Setup
